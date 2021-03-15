@@ -22,20 +22,20 @@ for i in $USERS ; do
     NAME=$(echo $i | cut -d'|' -f1)
     PASS=$(echo $i | cut -d'|' -f2)
   FOLDER=$(echo $i | cut -d'|' -f3)
-     UID=$(echo $i | cut -d'|' -f4)
+  USERID=$(echo $i | cut -d'|' -f4)
 
   if [ -z "$FOLDER" ]; then
     FOLDER="/ftp/$NAME"
   fi
 
-  if [ ! -z "$UID" ]; then
-    UID_OPT="-u $UID"
+  if [ ! -z "$USERID" ]; then
+    UID_OPT="-u $USERID"
   fi
 
   echo -e "$PASS\n$PASS" | adduser -h $FOLDER -s /sbin/nologin $UID_OPT $NAME
   mkdir -p $FOLDER
   chown $NAME:$NAME $FOLDER
-  unset NAME PASS FOLDER UID
+  unset NAME PASS FOLDER USERID
 done
 
 
@@ -51,8 +51,13 @@ if [ ! -z "$ADDRESS" ]; then
   ADDR_OPT="-opasv_address=$ADDRESS"
 fi
 
+if [ -n "${CHROOT}" ] && [ "${CHROOT}" = "yes" ]; then
+  echo "chroot_local_user=YES" >> /etc/vsftpd/vsftpd.conf
+  echo "allow_writeable_chroot=YES" >> /etc/vsftpd/vsftpd.conf
+fi
+
 # Used to run custom commands inside container
-if [ ! -z "$1" ]; then
+if [ -n "$1" ]; then
   exec "$@"
 else
   exec /usr/sbin/vsftpd -opasv_min_port=$MIN_PORT -opasv_max_port=$MAX_PORT $ADDR_OPT /etc/vsftpd/vsftpd.conf
